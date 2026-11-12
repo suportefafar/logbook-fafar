@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Submissão LogBook Fafar v1",
+  "description": "Corpo de POST /api/v1/logbook_submissions. Idempotency-Key deve ser igual a client_submission_id; esta regra é verificada pelo endpoint.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "client_submission_id",
+    "form_key",
+    "form_version",
+    "completion_state",
+    "recorded_at",
+    "trigger",
+    "client_version",
+    "client_context",
+    "answers"
+  ],
+  "properties": {
+    "client_submission_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "form_key": { "const": "logbook" },
+    "form_version": { "type": "integer", "const": 1 },
+    "completion_state": { "enum": ["complete", "partial"] },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:[Zz]|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "trigger": { "enum": ["manual", "process_exit"] },
+    "client_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "pattern": "\\S"
+    },
+    "client_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os_username", "hostname"],
+      "properties": {
+        "os_username": { "$ref": "#/$defs/contextText" },
+        "hostname": { "$ref": "#/$defs/contextText" }
+      }
+    },
+    "answers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": ["string", "null"],
+          "maxLength": 255,
+          "not": { "type": "string", "pattern": "[\\r\\n]" }
+        },
+        "registration_number": {
+          "type": ["string", "null"],
+          "maxLength": 100,
+          "not": { "type": "string", "pattern": "[\\r\\n]" }
+        },
+        "activity": {
+          "type": ["string", "null"],
+          "maxLength": 5000
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "completion_state": { "const": "complete" } },
+        "required": ["completion_state"]
+      },
+      "then": {
+        "properties": {
+          "answers": {
+            "required": ["name", "registration_number", "activity"],
+            "properties": {
+              "name": { "$ref": "#/$defs/requiredAnswer" },
+              "registration_number": { "$ref": "#/$defs/requiredAnswer" },
+              "activity": { "$ref": "#/$defs/requiredAnswer" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "requiredAnswer": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "contextText": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 255,
+      "allOf": [
+        { "pattern": "\\S" },
+        { "not": { "type": "string", "pattern": "[\\r\\n]" } }
+      ]
+    }
+  }
+}

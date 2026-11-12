@@ -1,27 +1,30 @@
 # LogBook Fafar
 
-Um aplicativo desktop leve em Python construído para facilitar o registro de logs operacionais no Windows 7 e 10. Ele combina uma interface CRUD simples (Create e Read) com automações de sistema, como auto-inicialização e gatilhos baseados em encerramento de processos específicos.
+Aplicação desktop em desenvolvimento para registrar o uso de equipamentos. O planejamento e o contrato proposto estão em [PLANEJAMENTO.md](PLANEJAMENTO.md), [technical-requirements.md](technical-requirements.md) e [api-contract.md](api-contract.md).
 
-## 🚀 Funcionalidades
+## Estado atual
 
-- **Registro Rápido (CREATE):** Formulário simples para inserção de dados.
-- **Visualização (READ):** Tabela em modo *Read-Only* para consulta rápida do histórico.
-- **Automação por Gatilho:** A tela de registro abre automaticamente assim que um processo monitorado (ex: `programa_x.exe`) é encerrado pelo usuário.
-- **Auto-run no Boot:** A tela de visualização é carregada automaticamente ao iniciar o Windows.
-- **Backup Silencioso:** O banco de dados SQLite é enviado via POST para um servidor remoto em *background* sempre que o programa é fechado.
-- **Salvamento Inteligente:** Se a janela de registro for fechada (pelo "X" ou Alt+F4), o sistema salva os dados preenchidos parcialmente, garantindo que nenhuma informação seja perdida.
+Estão disponíveis formulário, histórico local, monitoramento de processo e sincronização periódica. A intranet inclui o endpoint de criação e as páginas de consulta; é necessário aplicar a migração e provisionar credenciais com o escopo `logbook_submissions:create`. A capacidade `read_logbook_submission` é criada pela migração e pode ser concedida a usuários na administração de permissões. A inicialização automática ainda não foi configurada.
 
-## 🛠️ Tecnologias Utilizadas
+## Executar para teste
 
-- **Linguagem:** Python 3.8
-- **Interface Gráfica:** PyQt5 (ou Tkinter)
-- **Banco de Dados:** SQLite3
-- **Monitoramento de Processos:** `psutil`
-- **Requisições HTTP:** `requests`
-
-## ⚙️ Pré-requisitos
-
-Certifique-se de ter o Python 3.8 instalado na sua máquina.
+Instale Python compatível, Tkinter e a dependência:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+```
+
+No Debian/Ubuntu pode ser necessário instalar o pacote `python3-tk`. Para abrir o formulário e consultar registros locais:
+
+```bash
+python logbook.py form
+python logbook.py history
+```
+
+Para monitorar um processo, execute em outro terminal, substituindo pelo nome exato do processo (por exemplo `notepad.exe` no Windows):
+
+```bash
+python logbook_agent.py --process notepad.exe
+```
+
+Quando o processo observado encerrar, a aplicação abre o formulário. Os dados ficam sob `LOCALAPPDATA`, `XDG_DATA_HOME` ou `~/.local/share/logbook-fafar/logbook.sqlite`. Para conectar à intranet, defina `LOGBOOK_API_URL` como `https://<intranet>/api/v1/logbook_submissions` e `LOGBOOK_API_TOKEN` como o token da estação com escopo `logbook_submissions:create`. O agente tenta envios pendentes a cada 30 segundos e preserva a fila se houver falha. A API exige HTTPS e a chave `Idempotency-Key` igual ao UUID da submissão.
